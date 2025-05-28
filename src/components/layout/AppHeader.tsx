@@ -41,45 +41,62 @@ export function AppHeader() {
 
     try {
       if (format === 'Image' || format === 'PDF') {
-        // html2canvas has issues with capturing elements that have their own scroll.
-        // Temporarily disable scroll on the element and its parents for better capture.
-        const originalScrollTops: { element: HTMLElement; scrollTop: number }[] = [];
-        let current: HTMLElement | null = dashboardElement;
-        while (current) {
-          if (current.scrollTop > 0 || current.scrollLeft > 0) {
-            originalScrollTops.push({ element: current, scrollTop: current.scrollTop });
-            current.scrollTop = 0; // Reset scroll to capture from top
+        // Store original styles and scroll positions
+        const originalStyles: { element: HTMLElement; height: string; width: string; overflow: string }[] = [];
+        const originalScrollTops: { element: HTMLElement; scrollTop: number; scrollLeft: number }[] = [];
+
+        // Reset scroll positions of the dashboard element and its scrollable ancestors
+        let currentScrollElement: HTMLElement | null = dashboardElement;
+        while (currentScrollElement && currentScrollElement !== document.body) {
+          if (currentScrollElement.scrollTop > 0 || currentScrollElement.scrollLeft > 0) {
+            originalScrollTops.push({ 
+              element: currentScrollElement, 
+              scrollTop: currentScrollElement.scrollTop,
+              scrollLeft: currentScrollElement.scrollLeft 
+            });
+            currentScrollElement.scrollTop = 0;
+            currentScrollElement.scrollLeft = 0;
           }
-          if (current.parentElement && current.parentElement !== document.body) {
-            current = current.parentElement;
-          } else {
-            current = null;
-          }
+          currentScrollElement = currentScrollElement.parentElement;
         }
         
-        // Add a small delay to allow the DOM to update after scroll reset
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Get the actual grid layout element to determine its full scroll dimensions
+        const gridLayoutElement = dashboardElement.querySelector('.react-grid-layout') as HTMLElement | null;
+        
+        const captureWidth = gridLayoutElement ? gridLayoutElement.scrollWidth : dashboardElement.scrollWidth;
+        const captureHeight = gridLayoutElement ? gridLayoutElement.scrollHeight : dashboardElement.scrollHeight;
 
+        // Temporarily style the dashboardElement to ensure it's large enough for full capture
+        originalStyles.push({
+            element: dashboardElement,
+            height: dashboardElement.style.height,
+            width: dashboardElement.style.width,
+            overflow: dashboardElement.style.overflow,
+        });
+        dashboardElement.style.height = `${captureHeight}px`;
+        dashboardElement.style.width = `${captureWidth}px`; 
+        dashboardElement.style.overflow = 'visible';
+
+
+        // Add a small delay to allow the DOM to update after style changes and scroll reset
+        await new Promise(resolve => setTimeout(resolve, 300)); // Slightly increased delay
 
         const canvas = await html2canvas(dashboardElement, {
           allowTaint: true,
           useCORS: true,
           scrollX: 0,
-          scrollY: 0, // Capture from the top after resetting scroll
-          windowWidth: dashboardElement.scrollWidth,
-          windowHeight: dashboardElement.scrollHeight,
-          logging: false,
+          scrollY: 0, 
+          windowWidth: captureWidth, // Use the full scrollWidth of the grid
+          windowHeight: captureHeight, // Use the full scrollHeight of the grid
+          logging: true, // Enable logging for debugging
           onclone: (document) => {
-            // Attempt to ensure Tailwind styles are applied in the cloned document
-            // This is often tricky and might not always work perfectly.
             const styleSheets = Array.from(document.styleSheets);
             let globalStyles = "";
             try {
               styleSheets.forEach(sheet => {
-                if (sheet.href && sheet.href.includes('globals.css')) { // Heuristic
-                    // Accessing cssRules can throw CORS error if stylesheet is remote & not configured
+                if (sheet.href && sheet.href.includes('globals.css')) {
                     Array.from(sheet.cssRules).forEach(rule => globalStyles += rule.cssText);
-                } else if (!sheet.href) { // Inline styles
+                } else if (!sheet.href) { 
                     Array.from(sheet.cssRules).forEach(rule => globalStyles += rule.cssText);
                 }
               });
@@ -94,9 +111,17 @@ export function AppHeader() {
           }
         });
 
+        // Restore original styles
+        originalStyles.forEach(({ element, height, width, overflow }) => {
+          element.style.height = height;
+          element.style.width = width;
+          element.style.overflow = overflow;
+        });
+        
         // Restore original scroll positions
-        originalScrollTops.forEach(({ element, scrollTop }) => {
+        originalScrollTops.forEach(({ element, scrollTop, scrollLeft }) => {
           element.scrollTop = scrollTop;
+          element.scrollLeft = scrollLeft;
         });
 
         if (format === 'Image') {
@@ -120,13 +145,10 @@ export function AppHeader() {
           toast({ title: "PDF Downloaded", description: "Dashboard saved as PDF." });
         }
       } else if (format === 'HTML') {
+        // HTML download logic remains the same as it was generally working
         const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
         const content = dashboardElement.outerHTML;
         
-        // Try to get all computed styles from the main document and inline them
-        // This is a very heavy operation and might not be perfectly accurate or performant.
-        // A simpler approach would be to link to external stylesheets if possible,
-        // or just accept that the HTML will be structural with basic styles.
         let styles = "";
         Array.from(document.styleSheets).forEach(sheet => {
           try {
@@ -144,11 +166,8 @@ export function AppHeader() {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Dashboard Snapshot</title>
             <style>
-              /* Embedded styles from the application */
               ${styles}
-              /* Basic body styling for the snapshot */
               body { margin: 0; padding: 1rem; font-family: sans-serif; }
-              /* Ensure the dashboard content itself doesn't add extra margins if body has padding */
               #${DASHBOARD_CAPTURE_ID} { margin: 0 !important; padding: 0 !important; }
             </style>
           </head>
@@ -178,6 +197,14 @@ export function AppHeader() {
         description: `Could not generate ${format}. Check console for details.`,
         variant: "destructive",
       });
+       // Ensure styles are restored even on error
+        const originalStylesRestorer = document.getElementById(DASHBOARD_CAPTURE_ID)?.dataset.originalStyles;
+        if (originalStylesRestorer && dashboardElement) {
+            const { height, width, overflow } = JSON.parse(originalStylesRestorer);
+            dashboardElement.style.height = height;
+            dashboardElement.style.width = width;
+            dashboardElement.style.overflow = overflow;
+        }
     }
   };
 
@@ -223,3 +250,4 @@ export function AppHeader() {
     </header>
   );
 }
+
