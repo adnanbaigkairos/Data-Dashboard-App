@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -262,27 +263,35 @@ Sidebar.displayName = "Sidebar"
 const SidebarTrigger = React.forwardRef<
   React.ElementRef<typeof Button>,
   React.ComponentProps<typeof Button>
->(({ className, onClick, ...props }, ref) => {
-  const { toggleSidebar } = useSidebar()
+>(({ className, onClick, children, ...props }, ref) => {
+  const { toggleSidebar } = useSidebar();
 
   return (
     <Button
       ref={ref}
       data-sidebar="trigger"
-      variant="ghost"
-      size="icon"
-      className={cn("h-7 w-7", className)}
+      variant={props.asChild ? undefined : props.variant ?? "ghost"}
+      size={props.asChild ? undefined : props.size ?? "icon"}
+      className={cn(!props.asChild && "h-7 w-7", className)}
       onClick={(event) => {
-        onClick?.(event)
-        toggleSidebar()
+        onClick?.(event);
+        toggleSidebar();
       }}
-      {...props}
+      {...props} // Pass all props, including `asChild` and `children`
     >
-      <PanelLeft />
-      <span className="sr-only">Toggle Sidebar</span>
+      {/* Render default content only if not `asChild`.
+          If `asChild` is true, the `Button` component (which becomes a `Slot`)
+          will use the `children` passed to `SidebarTrigger` (via `props.children`).
+      */}
+      {!props.asChild && (
+        <>
+          <PanelLeft />
+          <span className="sr-only">Toggle Sidebar</span>
+        </>
+      )}
     </Button>
-  )
-})
+  );
+});
 SidebarTrigger.displayName = "SidebarTrigger"
 
 const SidebarRail = React.forwardRef<
