@@ -1,12 +1,17 @@
+
 "use client";
 
 import { useDashboard } from '@/contexts/DashboardContext';
 import { PlotCard } from './PlotCard';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BarChart3 } from 'lucide-react';
+import { Responsive, WidthProvider } from 'react-grid-layout';
+import type { Layout, Layouts } from 'react-grid-layout';
+
+const ResponsiveGridLayout = WidthProvider(Responsive);
 
 export function DashboardArea() {
-  const { plots, csvData } = useDashboard();
+  const { plots, csvData, updateAllPlotLayouts } = useDashboard();
 
   if (!csvData) {
     return (
@@ -31,12 +36,50 @@ export function DashboardArea() {
     );
   }
 
+  const generatedLayouts: Layouts = {
+    lg: plots.map(plot => ({
+      i: plot.id,
+      x: plot.x,
+      y: plot.y,
+      w: plot.w,
+      h: plot.h,
+      minW: plot.minW,
+      minH: plot.minH,
+      static: plot.static,
+    }))
+  };
+
+  const handleLayoutChange = (currentLayout: Layout[], allLayouts: Layouts) => {
+    // currentLayout is for the current breakpoint
+    updateAllPlotLayouts(currentLayout);
+  };
+
   return (
-    <ScrollArea className="h-full p-1 md:p-2">
-      <div className="flex flex-wrap gap-4 p-2 md:p-4">
-        {plots.map(plot => (
-          <PlotCard key={plot.id} plot={plot} />
-        ))}
+    <ScrollArea className="h-full w-full">
+      <div className="p-2 md:p-4"> {/* Added padding around RGL */}
+        <ResponsiveGridLayout
+          // className="layout" // RGL default class, can be useful for global RGL styles
+          layouts={generatedLayouts}
+          breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+          cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+          rowHeight={30} 
+          onLayoutChange={handleLayoutChange}
+          draggableHandle=".drag-handle"
+          // compactType="vertical" // "vertical" | "horizontal" | null
+          // preventCollision={true} // If true, grid items will not re-arrange other items.
+          isDraggable={true}
+          isResizable={true}
+          containerPadding={[0, 0]} // [horizontal, vertical] padding for the grid container
+          margin={[10, 10]} // [horizontal, vertical] margin between items
+        >
+          {plots.map(plot => (
+            <div key={plot.id} className="bg-card rounded-lg shadow-md overflow-hidden flex flex-col group/plotcard">
+              {/* This div is the grid item. PlotCard will be its child. */}
+              {/* Ensure PlotCard itself uses 100% width and height */}
+              <PlotCard plot={plot} />
+            </div>
+          ))}
+        </ResponsiveGridLayout>
       </div>
     </ScrollArea>
   );

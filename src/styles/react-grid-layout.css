@@ -1,0 +1,99 @@
+
+.react-grid-layout {
+  position: relative;
+  transition: height 200ms ease;
+}
+
+.react-grid-item {
+  transition: all 200ms ease;
+  transition-property: left, top, width, height; /* Added width and height for smoother resize */
+  box-sizing: border-box;
+}
+
+.react-grid-item.cssTransforms {
+  transition-property: transform;
+}
+
+.react-grid-item.resizing {
+  z-index: 1;
+  will-change: width, height;
+}
+
+.react-grid-item.react-draggable-dragging {
+  transition: none;
+  z-index: 3;
+  will-change: transform;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); /* Add shadow while dragging */
+}
+
+.react-grid-item.dropping {
+  visibility: hidden;
+}
+
+.react-grid-item.react-grid-placeholder {
+  background: hsl(var(--primary) / 0.2); /* Use primary color for placeholder */
+  opacity: 0.6;
+  transition-duration: 100ms;
+  z-index: 2;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -o-user-select: none;
+  user-select: none;
+  border-radius: var(--radius);
+  border: 2px dashed hsl(var(--primary)); /* Dashed border for placeholder */
+}
+
+.react-grid-item > .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  z-index: 2; /* Ensure handles are above content */
+}
+
+/* Style for the SE (South-East) resize handle */
+.react-grid-item > .react-resizable-handle-se {
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+}
+.react-grid-item > .react-resizable-handle-se::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 6px; /* Slightly larger for better visibility */
+  height: 6px; /* Slightly larger for better visibility */
+  border-right: 2px solid hsl(var(--muted-foreground) / 0.5);
+  border-bottom: 2px solid hsl(var(--muted-foreground) / 0.5);
+  transform: rotate(0deg); /* Explicitly set for clarity */
+}
+
+.dark .react-grid-item > .react-resizable-handle-se::after {
+  border-right-color: hsl(var(--muted-foreground) / 0.7);
+  border-bottom-color: hsl(var(--muted-foreground) / 0.7);
+}
+
+/* Hide handles by default, show on plot card hover */
+.react-grid-item:not(:hover) > .react-resizable-handle {
+  /* display: none; */ /* Can be too aggressive, let's use opacity */
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+.react-grid-item:hover > .react-resizable-handle {
+  opacity: 1;
+}
+.react-grid-item.react-draggable-dragging > .react-resizable-handle {
+  display: none; /* Hide handles while dragging */
+}
+
+/* Optional: Add more handle styles if you enable more resize directions */
+/*
+.react-resizable-handle-sw { bottom: 0; left: 0; cursor: sw-resize; transform: rotate(90deg); }
+.react-resizable-handle-nw { top: 0; left: 0; cursor: nw-resize; transform: rotate(180deg); }
+.react-resizable-handle-ne { top: 0; right: 0; cursor: ne-resize; transform: rotate(270deg); }
+.react-resizable-handle-w { top: 50%; left: 0; margin-top: -10px; cursor: ew-resize; }
+.react-resizable-handle-e { top: 50%; right: 0; margin-top: -10px; cursor: ew-resize; }
+.react-resizable-handle-n { top: 0; left: 50%; margin-left: -10px; cursor: ns-resize; }
+.react-resizable-handle-s { bottom: 0; left: 50%; margin-left: -10px; cursor: ns-resize; }
+*/

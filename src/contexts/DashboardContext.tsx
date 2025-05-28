@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -5,6 +6,7 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 import type { CSVData, PlotConfig, ChartType, PlotColumnConfig } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { prepareChartData } from '@/lib/chartUtils';
+import type { Layout } from 'react-grid-layout';
 
 interface DashboardContextType {
   csvData: CSVData | null;
@@ -14,9 +16,16 @@ interface DashboardContextType {
   removePlot: (id: string) => void;
   updatePlotTitle: (id: string, newTitle: string) => void;
   getPlotData: (plotConfig: PlotConfig) => any[];
+  updateAllPlotLayouts: (newLayout: Layout[]) => void;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
+
+const DEFAULT_PLOT_WIDTH = 4; 
+const DEFAULT_PLOT_HEIGHT = 8; 
+const MIN_PLOT_WIDTH = 3;
+const MIN_PLOT_HEIGHT = 5;
+
 
 export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   const [csvData, setCsvData] = useState<CSVData | null>(null);
@@ -29,15 +38,22 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     const newPlot: PlotConfig = {
-      id: Date.now().toString(), // Simple unique ID
+      id: Date.now().toString(), 
       title,
       type,
       columns,
-      dataKey: `data_for_plot_${Date.now().toString()}`, // Placeholder, real data processed on demand
+      dataKey: `data_for_plot_${Date.now().toString()}`,
+      x: (plots.length * DEFAULT_PLOT_WIDTH) % 12, 
+      y: Infinity, // Let react-grid-layout place it at the bottom
+      w: DEFAULT_PLOT_WIDTH,
+      h: DEFAULT_PLOT_HEIGHT,
+      minW: MIN_PLOT_WIDTH,
+      minH: MIN_PLOT_HEIGHT,
+      static: false,
     };
     setPlots(prevPlots => [...prevPlots, newPlot]);
     toast({ title: "Plot Added", description: `${title} (${type}) has been added to the dashboard.` });
-  }, [csvData, toast]);
+  }, [csvData, plots, toast]);
 
   const removePlot = useCallback((id: string) => {
     setPlots(prevPlots => prevPlots.filter(plot => plot.id !== id));
@@ -57,8 +73,36 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     return prepareChartData(csvData.rows, plotConfig);
   }, [csvData]);
 
+  const updateAllPlotLayouts = useCallback((currentLayout: Layout[]) => {
+    setPlots(prevPlots => {
+      return prevPlots.map(plot => {
+        const layoutItem = currentLayout.find(l => l.i === plot.id);
+        if (layoutItem) {
+          return {
+            ...plot,
+            x: layoutItem.x,
+            y: layoutItem.y,
+            w: layoutItem.w,
+            h: layoutItem.h,
+            static: layoutItem.static || false,
+          };
+        }
+        return plot;
+      }).sort((a,b) => a.y - b.y || a.x - b.x); // Keep plots sorted by position for consistent rendering order
+    });
+  }, []);
+
   return (
-    <DashboardContext.Provider value={{ csvData, setCsvData, plots, addPlot, removePlot, updatePlotTitle, getPlotData }}>
+    <DashboardContext.Provider value={{ 
+        csvData, 
+        setCsvData, 
+        plots, 
+        addPlot, 
+        removePlot, 
+        updatePlotTitle, 
+        getPlotData,
+        updateAllPlotLayouts 
+      }}>
       {children}
     </DashboardContext.Provider>
   );

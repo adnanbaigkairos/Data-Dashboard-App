@@ -10,9 +10,15 @@ export interface PlotConfig {
   id: string;
   title: string;
   type: ChartType;
-  dataKey: string; // Key to identify original data subset if needed, or transformed data itself
+  dataKey: string; 
   columns: PlotColumnConfig[];
-  // Add other plot-specific customizations here, e.g., colorPalette
+  x: number; // Grid layout x position
+  y: number; // Grid layout y position
+  w: number; // Grid layout width
+  h: number; // Grid layout height
+  minW?: number; // Minimum width for resizing
+  minH?: number; // Minimum height for resizing
+  static?: boolean; // If true, item is not draggable or resizable
 }
 
 export interface CSVData {

@@ -1,10 +1,11 @@
+
 "use client";
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trash2, Edit3, Save, XCircle } from "lucide-react";
+import { Trash2, Edit3, Save, XCircle, GripVertical } from "lucide-react";
 import type { PlotConfig, ChartType } from "@/types";
 import { useDashboard } from "@/contexts/DashboardContext";
 
@@ -27,7 +28,7 @@ const chartComponents: Record<ChartType, React.ComponentType<any>> = {
   histogram: HistogramPlot,
   density: DensityPlot,
   count: CountPlot,
-  map: PlaceholderPlot, // Map plot placeholder
+  map: PlaceholderPlot, 
 };
 
 export function PlotCard({ plot }: PlotCardProps) {
@@ -51,8 +52,8 @@ export function PlotCard({ plot }: PlotCardProps) {
   }
 
   return (
-    <Card className="w-full md:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.666rem)] xl:w-[calc(25%-0.75rem)] flex flex-col shadow-lg break-inside-avoid-column">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <Card className="w-full h-full flex flex-col"> {/* Ensure card fills the RGL item div */}
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative cursor-default"> {/* cursor-default on header */}
         {isEditingTitle ? (
           <div className="flex items-center gap-2 w-full">
             <Input 
@@ -70,7 +71,13 @@ export function PlotCard({ plot }: PlotCardProps) {
           </div>
         ) : (
           <>
-            <CardTitle className="text-lg font-semibold truncate" title={plot.title}>
+            <div 
+              className="drag-handle cursor-grab absolute left-1 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground group-hover/plotcard:opacity-100 md:opacity-0 transition-opacity duration-150"
+              title="Drag to move"
+            >
+              <GripVertical className="h-5 w-5" />
+            </div>
+            <CardTitle className="text-lg font-semibold truncate pl-8" title={plot.title}>
               {plot.title}
             </CardTitle>
             <div className="flex items-center gap-1">
@@ -84,7 +91,7 @@ export function PlotCard({ plot }: PlotCardProps) {
           </>
         )}
       </CardHeader>
-      <CardContent className="flex-grow p-2 min-h-[250px] flex items-center justify-center">
+      <CardContent className="flex-grow p-2 min-h-0 flex items-center justify-center overflow-auto"> {/* min-h-0 for flexible shrinking, overflow-auto for content */}
         {ChartComponent === PlaceholderPlot ? (
           <PlaceholderPlot title={plot.title} message={plot.type === 'map' ? 'Map Plot functionality is a placeholder.' : 'Chart component not found.'} />
         ) : (
