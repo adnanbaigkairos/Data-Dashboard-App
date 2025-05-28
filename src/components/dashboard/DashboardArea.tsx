@@ -9,6 +9,7 @@ import { Responsive, WidthProvider } from 'react-grid-layout';
 import type { Layout, Layouts } from 'react-grid-layout';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
+const DASHBOARD_CAPTURE_ID = "dashboard-content-to-capture";
 
 export function DashboardArea() {
   const { plots, csvData, updateAllPlotLayouts } = useDashboard();
@@ -55,27 +56,22 @@ export function DashboardArea() {
   };
 
   return (
-    <ScrollArea className="h-full w-full">
-      <div className="p-2 md:p-4"> {/* Added padding around RGL */}
+    <ScrollArea className="h-full w-full bg-background"> {/* Ensure ScrollArea has a background for capture */}
+      <div id={DASHBOARD_CAPTURE_ID} className="p-2 md:p-4 bg-background"> {/* Added ID and background */}
         <ResponsiveGridLayout
-          // className="layout" // RGL default class, can be useful for global RGL styles
           layouts={generatedLayouts}
           breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
           cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
           rowHeight={30} 
           onLayoutChange={handleLayoutChange}
           draggableHandle=".drag-handle"
-          // compactType="vertical" // "vertical" | "horizontal" | null
-          // preventCollision={true} // If true, grid items will not re-arrange other items.
           isDraggable={true}
           isResizable={true}
-          containerPadding={[0, 0]} // [horizontal, vertical] padding for the grid container
-          margin={[10, 10]} // [horizontal, vertical] margin between items
+          containerPadding={[0, 0]} 
+          margin={[10, 10]} 
         >
           {plots.map(plot => (
             <div key={plot.id} className="bg-card rounded-lg shadow-md overflow-hidden flex flex-col group/plotcard">
-              {/* This div is the grid item. PlotCard will be its child. */}
-              {/* Ensure PlotCard itself uses 100% width and height */}
               <PlotCard plot={plot} />
             </div>
           ))}
