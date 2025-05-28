@@ -1,0 +1,53 @@
+"use client";
+
+import type { ChartConfig } from "@/components/ui/chart";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
+import { CartesianGrid, Line, LineChart as RechartsLineChart, XAxis, YAxis } from "recharts";
+import type { ChartProps, PlotColumnConfig } from "@/types";
+
+function getSelectedColumnName(columns: PlotColumnConfig[], role: string): string | undefined {
+  return columns.find(c => c.role === role)?.columnName;
+}
+
+export function LinePlot({ data, config }: ChartProps) {
+  const xAxisKey = getSelectedColumnName(config.columns, 'xAxis');
+  const yAxisKey = getSelectedColumnName(config.columns, 'yAxis');
+
+  if (!xAxisKey || !yAxisKey || data.length === 0) {
+    return <div className="text-center p-4">Line Plot: Insufficient data or configuration.</div>;
+  }
+  
+  const yAxisLabel = yAxisKey || "Value";
+
+  const chartConfig = {
+    [yAxisLabel]: {
+      label: yAxisLabel,
+      color: "hsl(var(--chart-1))",
+    },
+  } satisfies ChartConfig;
+
+  return (
+    <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+      <RechartsLineChart data={data} margin={{ left: 12, right: 12, top: 5, bottom: 5 }}>
+        <CartesianGrid vertical={false} />
+        <XAxis
+          dataKey={xAxisKey}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          tickFormatter={(value) => typeof value === 'string' ? value.slice(0, 10) : value} // Shorten long labels
+        />
+        <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+        <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+        <ChartLegend content={<ChartLegendContent />} />
+        <Line
+          dataKey={yAxisLabel} // Use the label for dataKey if yAxisKey is complex or for dynamic naming
+          type="monotone"
+          stroke={`var(--color-${yAxisLabel})`}
+          strokeWidth={2}
+          dot={true}
+        />
+      </RechartsLineChart>
+    </ChartContainer>
+  );
+}
